@@ -18,8 +18,10 @@ public class MazeSpawner : MonoBehaviour
     public GameObject Floor = null;
     public GameObject Wall = null;
     public GameObject Pillar = null;
+
     public int Rows = 5;
     public int Columns = 5;
+
     public float CellWidth = 5;
     public float CellHeight = 5;
     public bool AddGaps = true;
@@ -40,6 +42,9 @@ public class MazeSpawner : MonoBehaviour
 
     void Start()
     {
+        Rows = GameSettings.MazeRows;
+        Columns = GameSettings.MazeColumns;
+
         if (!FullRandom)
         {
             Random.seed = RandomSeed;
@@ -176,6 +181,7 @@ public class MazeSpawner : MonoBehaviour
 
         Debug.Log("Лабиринт сгенерирован, вызываем событие OnObjectPlaced");
         ObjectPlacement.RaiseOnObjectPlaced(transform);
+
     }
 }
 
