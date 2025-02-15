@@ -1,5 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
+using System.IO;
 
 public class MazeSpawner : MonoBehaviour
 {
@@ -12,9 +14,10 @@ public class MazeSpawner : MonoBehaviour
         RecursiveDivision,
     }
 
+    [Header("Основные настройки генерации")]
     public MazeGenerationAlgorithm Algorithm = MazeGenerationAlgorithm.PureRecursive;
     public bool FullRandom = false;
-    public int RandomSeed = 12345;
+    public int RandomSeed;
     public GameObject Floor = null;
     public GameObject Wall = null;
     public GameObject Pillar = null;
@@ -27,51 +30,85 @@ public class MazeSpawner : MonoBehaviour
     public bool AddGaps = true;
     public GameObject GoalPrefab = null;
 
+    [Header("Difficulty Settings")]
+    [Tooltip("Если true, берём сид из SeedSelector (по выбранной сложности в GameSettings)")]
+    public bool useSeedFromFile = true;
+    private SeedSelector seedSelector;
+
     [Header("Scaling")]
     [Tooltip("Базовый коэффициент масштаба лабиринта при спавне (например, 0.15)")]
     public float overallScale = 0.15f;
 
+    [Header("Seed Test Settings")]
+    public bool runSeedTest = false;
+    public int testSeedStart = 1;
+    public int testSeedEnd = 10;
+
     public GameObject firstTile;
     public GameObject finishTile;
 
-    // Для хранения координат финишной клетки (по индексам)
     private int finishRow = -1, finishColumn = -1;
     private float maxGoalDist = -1f;
 
     private BasicMazeGenerator mMazeGenerator = null;
+    private List<int> validSeeds = new List<int>();
 
     void Start()
     {
-        Rows = GameSettings.MazeRows;
-        Columns = GameSettings.MazeColumns;
+        if (runSeedTest)
+        {
+            StartCoroutine(TestSeedRange());
+        }
+        else
+        {
+            Rows = GameSettings.MazeRows;
+            Columns = GameSettings.MazeColumns;
 
+            if (useSeedFromFile)
+            {
+                seedSelector = FindObjectOfType<SeedSelector>();
+                if (seedSelector != null)
+                {
+                    RandomSeed = seedSelector.GetRandomSeedForDifficulty(GameSettings.selectedDifficulty);
+                }
+                else
+                {
+                    Debug.LogWarning("SeedSelector не найден в сцене. Будет использован RandomSeed из инспектора.");
+                }
+            }
+
+            GenerateAndSpawnMaze();
+        }
+    }
+
+    void GenerateAndSpawnMaze()
+    {
         if (!FullRandom)
         {
             Random.seed = RandomSeed;
+            Debug.Log("Выбран сид: " + RandomSeed);
         }
 
-        switch (Algorithm)
-        {
-            case MazeGenerationAlgorithm.PureRecursive:
-                mMazeGenerator = new RecursiveMazeGenerator(Rows, Columns);
-                break;
-            case MazeGenerationAlgorithm.RecursiveTree:
-                mMazeGenerator = new RecursiveTreeMazeGenerator(Rows, Columns);
-                break;
-            case MazeGenerationAlgorithm.RandomTree:
-                mMazeGenerator = new RandomTreeMazeGenerator(Rows, Columns);
-                break;
-            case MazeGenerationAlgorithm.OldestTree:
-                mMazeGenerator = new OldestTreeMazeGenerator(Rows, Columns);
-                break;
-            case MazeGenerationAlgorithm.RecursiveDivision:
-                mMazeGenerator = new DivisionMazeGenerator(Rows, Columns);
-                break;
-        }
-
+        ChooseAlgorithm();
         mMazeGenerator.GenerateMaze();
+        SpawnMaze();
 
-        // Проходим по всем клеткам лабиринта
+        GlobalContainer.Instance.transform.position = transform.position;
+        GlobalContainer.Instance.transform.localScale = Vector3.one * overallScale;
+
+        Debug.Log("Лабиринт сгенерирован, вызываем событие OnObjectPlaced");
+        ObjectPlacement.RaiseOnObjectPlaced(transform);
+    }
+
+    void SpawnMaze()
+    {
+        maxGoalDist = -1f;
+        finishTile = null;
+        finishRow = -1;
+        finishColumn = -1;
+
+        int coinCount = 0;
+
         for (int row = 0; row < Rows; row++)
         {
             for (int column = 0; column < Columns; column++)
@@ -80,21 +117,18 @@ public class MazeSpawner : MonoBehaviour
                 float z = row * (CellHeight + (AddGaps ? 0.2f : 0));
 
                 MazeCell cell = mMazeGenerator.GetMazeCell(row, column);
+
                 GameObject tmp = Instantiate(Floor, new Vector3(x, 0, z), Quaternion.identity) as GameObject;
                 tmp.transform.parent = GlobalContainer.Instance.transform;
 
-                // Первая плитка (ячейка [0,0])
                 if (row == 0 && column == 0)
                 {
                     firstTile = tmp;
                     Debug.Log("Первая плитка установлена, позиция: " + firstTile.transform.position);
                 }
 
-                // Если клетка имеет IsGoal (тупиковая клетка) и не является стартовой,
-                // вычисляем расстояние (по индексам) и выбираем ту, у которой оно максимальное.
                 if (cell.IsGoal && !(row == 0 && column == 0))
                 {
-                    // Используем индексы клеток для расстояния от начала (0,0)
                     float d = Vector2.Distance(new Vector2(column, row), Vector2.zero);
                     if (d > maxGoalDist)
                     {
@@ -125,46 +159,28 @@ public class MazeSpawner : MonoBehaviour
                     tmp = Instantiate(Wall, new Vector3(x, 0, z - CellHeight / 2) + Wall.transform.position, Quaternion.Euler(0, 180, 0)) as GameObject;
                     tmp.transform.parent = GlobalContainer.Instance.transform;
                 }
-                // Создаем GoalPrefab (например, монетку) только если клетка IsGoal,
-                // но если эта клетка является финишной, GoalPrefab не создается.
+
                 if (cell.IsGoal && GoalPrefab != null)
                 {
-                    // Если текущие индексы совпадают с финишными, пропускаем создание GoalPrefab
                     if (!(row == finishRow && column == finishColumn))
                     {
                         tmp = Instantiate(GoalPrefab, new Vector3(x, 1, z), Quaternion.identity) as GameObject;
                         tmp.transform.parent = GlobalContainer.Instance.transform;
+                        coinCount++;
                     }
                 }
             }
         }
 
-        if (Pillar != null)
-        {
-            for (int row = 0; row < Rows + 1; row++)
-            {
-                for (int column = 0; column < Columns + 1; column++)
-                {
-                    float x = column * (CellWidth + (AddGaps ? 0.2f : 0));
-                    float z = row * (CellHeight + (AddGaps ? 0.2f : 0));
-                    GameObject tmp = Instantiate(Pillar, new Vector3(x - CellWidth / 2, 0, z - CellHeight / 2), Quaternion.identity) as GameObject;
-                    tmp.transform.parent = GlobalContainer.Instance.transform;
-                }
-            }
-        }
-
-        // Настраиваем finishTile, если она была выбрана
         if (finishTile != null)
         {
             Debug.Log("Финишная плитка выбрана, позиция: " + finishTile.transform.position);
-            // Настраиваем Collider как триггер
             BoxCollider bc = finishTile.GetComponent<BoxCollider>();
             if (bc == null)
             {
                 bc = finishTile.AddComponent<BoxCollider>();
             }
             bc.isTrigger = true;
-            // Добавляем контроллер финиша
             if (finishTile.GetComponent<FinishTileController>() == null)
             {
                 finishTile.AddComponent<FinishTileController>();
@@ -175,13 +191,80 @@ public class MazeSpawner : MonoBehaviour
             Debug.Log("Финишная плитка не найдена!");
         }
 
-        // Перемещаем GlobalContainer в позицию MazeSpawner и устанавливаем его масштаб
-        GlobalContainer.Instance.transform.position = transform.position;
-        GlobalContainer.Instance.transform.localScale = Vector3.one * overallScale;
+        Debug.Log("Общее количество монет: " + coinCount);
+    }
 
-        Debug.Log("Лабиринт сгенерирован, вызываем событие OnObjectPlaced");
-        ObjectPlacement.RaiseOnObjectPlaced(transform);
+    void ChooseAlgorithm()
+    {
+        switch (Algorithm)
+        {
+            case MazeGenerationAlgorithm.PureRecursive:
+                mMazeGenerator = new RecursiveMazeGenerator(Rows, Columns);
+                break;
+            case MazeGenerationAlgorithm.RecursiveTree:
+                mMazeGenerator = new RecursiveTreeMazeGenerator(Rows, Columns);
+                break;
+            case MazeGenerationAlgorithm.RandomTree:
+                mMazeGenerator = new RandomTreeMazeGenerator(Rows, Columns);
+                break;
+            case MazeGenerationAlgorithm.OldestTree:
+                mMazeGenerator = new OldestTreeMazeGenerator(Rows, Columns);
+                break;
+            case MazeGenerationAlgorithm.RecursiveDivision:
+                mMazeGenerator = new DivisionMazeGenerator(Rows, Columns);
+                break;
+        }
+    }
 
+    // Короутина для тестирования сидов
+    IEnumerator TestSeedRange()
+    {
+        validSeeds.Clear();
+
+        for (int seed = testSeedStart; seed <= testSeedEnd; seed++)
+        {
+            // Очистка
+            List<GameObject> children = new List<GameObject>();
+            foreach (Transform child in GlobalContainer.Instance.transform)
+            {
+                children.Add(child.gameObject);
+            }
+            foreach (GameObject child in children)
+            {
+                Destroy(child);
+            }
+            yield return null;
+
+            Random.seed = seed;
+            ChooseAlgorithm();
+            mMazeGenerator.GenerateMaze();
+            SpawnMaze();
+            GlobalContainer.Instance.transform.position = transform.position;
+            GlobalContainer.Instance.transform.localScale = Vector3.one * overallScale;
+
+            yield return new WaitForSeconds(0.1f);
+
+            // Подсчитываем монетки
+            int coinCount = 0;
+            foreach (Transform child in GlobalContainer.Instance.transform)
+            {
+                if (child.CompareTag("Coin"))
+                    coinCount++;
+            }
+
+            if (coinCount == 3)
+            {
+                Debug.Log("Seed " + seed + " генерирует 3 монет");
+                validSeeds.Add(seed);
+            }
+
+            yield return new WaitForSeconds(0.1f);
+        }
+
+        string filePath = Application.persistentDataPath + "/validSeeds.txt";
+        string text = $"Algorithm PureRecursive, Seeds with 3 coins with rows: {Rows} column: {Columns}: "
+                      + string.Join(", ", validSeeds.ToArray()) + "\n";
+        File.AppendAllText(filePath, text);
+        Debug.Log("Подходящие сиды сохранены в файл: " + filePath);
     }
 }
-
