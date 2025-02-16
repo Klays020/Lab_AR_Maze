@@ -67,13 +67,14 @@ public class MazeSpawner : MonoBehaviour
             if (useSeedFromFile)
             {
                 seedSelector = FindObjectOfType<SeedSelector>();
+
                 if (seedSelector != null)
                 {
                     RandomSeed = seedSelector.GetRandomSeedForDifficulty(GameSettings.selectedDifficulty);
                 }
                 else
                 {
-                    Debug.LogWarning("SeedSelector не найден в сцене. Будет использован RandomSeed из инспектора.");
+                    Debug.Log("SeedSelector не найден в сцене. Будет использован RandomSeed из инспектора");
                 }
             }
 
@@ -223,7 +224,6 @@ public class MazeSpawner : MonoBehaviour
 
         for (int seed = testSeedStart; seed <= testSeedEnd; seed++)
         {
-            // Очистка
             List<GameObject> children = new List<GameObject>();
             foreach (Transform child in GlobalContainer.Instance.transform)
             {
@@ -244,7 +244,6 @@ public class MazeSpawner : MonoBehaviour
 
             yield return new WaitForSeconds(0.1f);
 
-            // Подсчитываем монетки
             int coinCount = 0;
             foreach (Transform child in GlobalContainer.Instance.transform)
             {

@@ -18,6 +18,7 @@ public class SeedSelector : MonoBehaviour
     public int GetRandomSeedForDifficulty(Difficulty difficulty)
     {
         TextAsset seedDataAsset = Resources.Load<TextAsset>(seedFileName);
+
         if (seedDataAsset == null)
         {
             Debug.LogError($"Файл '{seedFileName}.txt' не найден в папке Resources!");
@@ -25,16 +26,12 @@ public class SeedSelector : MonoBehaviour
         }
 
         string[] lines = seedDataAsset.text.Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.RemoveEmptyEntries);
-        if (lines.Length < 3)
-        {
-            Debug.LogError("В файле с сидами должно быть как минимум три строки (для Easy, Medium, Hard)!");
-            return 0;
-        }
 
         int index = (int)difficulty;
+
         if (index >= lines.Length)
         {
-            Debug.LogWarning($"В файле всего {lines.Length} строк, а запрошен индекс {index}. Будет использована последняя строка.");
+            Debug.LogWarning($"В файле всего {lines.Length} строк, а запрошен индекс {index}. Будет использована последняя строка");
             index = lines.Length - 1;
         }
 
