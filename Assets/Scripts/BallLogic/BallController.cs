@@ -1,35 +1,55 @@
 using UnityEngine;
 
-public class BallGyroController : MonoBehaviour
+public class BallController : MonoBehaviour
 {
     [Header("Настройки управления")]
     [Tooltip("Множитель силы, применяемой к мячу")]
     [SerializeField] private float forceMultiplier = 10f;
+
+    [Tooltip("Использовать акселерометр (true) или гироскоп (false)")]
+    [SerializeField] private bool useAccelerometer = true;
 
     private Rigidbody rb;
 
     private void Start()
     {
         rb = GetComponent<Rigidbody>();
-        Input.gyro.enabled = true;
+
+        if (!useAccelerometer)
+        {
+            Input.gyro.enabled = true;
+        }
     }
 
     private void FixedUpdate()
     {
-        ProcessGyroRaw();
+        if (useAccelerometer)
+        {
+            ProcessAccelerationCorrected();
+        }
+        else
+        {
+            ProcessGyroCorrected();
+        }
     }
 
-    // Получаем кватернион из гироскопа
-    // Берем Input.gyro.attitude, преобразуем его в углы Эйлера,
-    // Используем соответствующие компоненты для управления движением.
-    private void ProcessGyroRaw()
+    private void ProcessAccelerationCorrected()
     {
-        Quaternion gyroAttitude = Input.gyro.attitude;
-        Vector3 euler = gyroAttitude.eulerAngles;
+        Vector3 acceleration = Input.acceleration;
 
-        float deltaX = Mathf.DeltaAngle(0, euler.x);
-        float deltaY = Mathf.DeltaAngle(0, euler.y);
-        Vector3 force = new Vector3(deltaY, 0, -deltaX);
-        rb.AddForce(force * forceMultiplier);
+        Vector3 tilt = new Vector3(acceleration.x, 0, acceleration.y);
+
+        rb.AddForce(tilt * forceMultiplier);
+    }
+
+    private void ProcessGyroCorrected()
+    {
+        Quaternion deviceRotation = Input.gyro.attitude;
+        Quaternion correction = Quaternion.Euler(90, 0, 0);
+        Quaternion worldRotation = correction * deviceRotation;
+
+        Vector3 tilt = worldRotation * Vector3.forward;
+
+        rb.AddForce(new Vector3(tilt.x, 0, tilt.z) * forceMultiplier);
     }
 }

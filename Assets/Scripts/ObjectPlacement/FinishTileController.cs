@@ -17,11 +17,18 @@ public class FinishTileController : MonoBehaviour
     {
         if (other.CompareTag("Ball"))
         {
-            Debug.Log("Победа!");
-            if (rend != null)
-            {
-                rend.material.color = Color.green;
-            }
+            TriggerWin();
         }
+    }
+
+    public void TriggerWin()
+    {
+        Debug.Log("Победа!");
+        if (rend != null)
+        {
+            rend.material.color = Color.green;
+        }
+
+        ScoreManager.Instance.EndLevel(true);
     }
 }

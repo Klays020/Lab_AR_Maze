@@ -79,6 +79,7 @@ public class MazeSpawner : MonoBehaviour
             }
 
             GenerateAndSpawnMaze();
+            ScoreManager.Instance.StartLevel();
         }
     }
 
@@ -96,6 +97,8 @@ public class MazeSpawner : MonoBehaviour
 
         GlobalContainer.Instance.transform.position = transform.position;
         GlobalContainer.Instance.transform.localScale = Vector3.one * overallScale;
+
+        GetComponent<CoinPositionLogger>()?.LogCoinPositions();
 
         Debug.Log("Лабиринт сгенерирован, вызываем событие OnObjectPlaced");
         ObjectPlacement.RaiseOnObjectPlaced(transform);

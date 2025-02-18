@@ -16,7 +16,7 @@ public class ObjectPlacement : MonoBehaviour
     private bool _objectPlaced = false;
 
     [Header("Spawn Settings")]
-    [SerializeField] private Vector3 spawnOffset = Vector3.zero;
+    //[SerializeField] private Vector3 spawnOffset = Vector3.zero;
     private Transform _placedObject; // Ссылка на уже созданный лабиринт
 
 
@@ -49,18 +49,26 @@ public class ObjectPlacement : MonoBehaviour
             if (!_model.currentGObj.activeSelf)
                 _model.currentGObj.SetActive(true);
 
-            _model.currentTransform.position = touchPos + spawnOffset;
+            _model.currentTransform.position = touchPos;// + spawnOffset;
+            //_model.currentTransform.rotation = Quaternion.identity;
+
+            Vector3 directionToCamera = _cameraTransform.position - _model.currentTransform.position;
+            directionToCamera.y = 0; // только горизонтальное направление
+
+            _model.currentTransform.rotation = Quaternion.LookRotation(directionToCamera);
+
+
             // Не меняем поворот, если это лабиринт
             _placedObject = _model.currentTransform;
             _objectPlaced = true;
             //OnObjectPlaced?.Invoke(_placedObject);
-            // Можно отписаться от обновлений:
+
             TouchDetector.PlaneTouchEvent.RemoveListener(OnTouch);
 
         }
         else
         {
-            _placedObject.position = touchPos + spawnOffset;
+            _placedObject.position = touchPos;// + spawnOffset;
         }
     }
 
@@ -68,13 +76,20 @@ public class ObjectPlacement : MonoBehaviour
     {
         if (!_objectPlaced)
         {
-            // Определим позицию спавна относительно камеры:
-            // смещаем камеру вперед на 2 метра и добавляем spawnOffset
-            Vector3 spawnPosition = _cameraTransform.position + _cameraTransform.forward * 2.0f + spawnOffset;
+
+            Vector3 spawnPosition = _cameraTransform.position + _cameraTransform.forward * 2.0f;// + spawnOffset;
             if (!_model.currentGObj.activeSelf)
                 _model.currentGObj.SetActive(true);
 
             _model.currentTransform.position = spawnPosition;
+
+
+            Vector3 directionToCamera = _cameraTransform.position - _model.currentTransform.position;
+            directionToCamera.y = 0; // только горизонтальное направление
+
+            _model.currentTransform.rotation = Quaternion.LookRotation(directionToCamera);
+
+
             _placedObject = _model.currentTransform;
             _objectPlaced = true;
 
