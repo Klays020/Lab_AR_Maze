@@ -17,7 +17,9 @@ public class ObjectPlacement : MonoBehaviour
 
     [Header("Spawn Settings")]
     //[SerializeField] private Vector3 spawnOffset = Vector3.zero;
-    private Transform _placedObject; // Ссылка на уже созданный лабиринт
+
+    // Ссылка на уже созданный лабиринт
+    private Transform _placedObject;
 
 
     public static event Action<Transform> OnObjectPlaced;
@@ -53,7 +55,7 @@ public class ObjectPlacement : MonoBehaviour
             //_model.currentTransform.rotation = Quaternion.identity;
 
             Vector3 directionToCamera = _cameraTransform.position - _model.currentTransform.position;
-            directionToCamera.y = 0; // только горизонтальное направление
+            directionToCamera.y = 0;
 
             _model.currentTransform.rotation = Quaternion.LookRotation(directionToCamera);
 
@@ -85,7 +87,7 @@ public class ObjectPlacement : MonoBehaviour
 
 
             Vector3 directionToCamera = _cameraTransform.position - _model.currentTransform.position;
-            directionToCamera.y = 0; // только горизонтальное направление
+            directionToCamera.y = 0;
 
             _model.currentTransform.rotation = Quaternion.LookRotation(directionToCamera);
 

@@ -4,7 +4,7 @@ using UnityEngine;
 public class BallSpawner : MonoBehaviour
 {
     [Header("Настройки шара")]
-    [SerializeField] private GameObject ballPrefab; // Префаб шара с Rigidbody и SphereCollider
+    [SerializeField] private GameObject ballPrefab;
     [SerializeField] private float ballRadius = 0.52f;
 
     [SerializeField] private float verticalSpawnOffset = 0.52f;

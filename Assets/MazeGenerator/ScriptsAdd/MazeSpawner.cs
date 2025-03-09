@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using UnityEngine.XR.ARFoundation;
 
 public class MazeSpawner : MonoBehaviour
 {
@@ -102,6 +103,30 @@ public class MazeSpawner : MonoBehaviour
 
         Debug.Log("Лабиринт сгенерирован, вызываем событие OnObjectPlaced");
         ObjectPlacement.RaiseOnObjectPlaced(transform);
+
+
+        ARPlaneManager planeManager = FindObjectOfType<ARPlaneManager>();
+        if (planeManager != null)
+        {
+            planeManager.enabled = false; // Отключаем определение новых плоскостей
+            foreach (var plane in planeManager.trackables)
+            {
+                //plane.gameObject.SetActive(false); 
+                Destroy(plane.gameObject);
+            }
+        }
+
+        // Отключаем отображение точек (Feature Points)
+        ARPointCloudManager pointCloudManager = FindObjectOfType<ARPointCloudManager>();
+        if (pointCloudManager != null)
+        {
+            pointCloudManager.enabled = false; // Отключаем генерацию новых точек
+            foreach (var pointCloud in pointCloudManager.trackables)
+            {
+                pointCloud.gameObject.SetActive(false); // Делаем существующие точки невидимыми
+            }
+        }
+
     }
 
     void SpawnMaze()

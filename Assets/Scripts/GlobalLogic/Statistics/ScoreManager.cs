@@ -3,35 +3,27 @@ using UnityEngine;
 public class ScoreManager : MonoBehaviour
 {
     public static ScoreManager Instance { get; private set; }
+    [SerializeField] private GameObject endGameObject;
 
     [Header("Монеты и очки")]
     public int coinsCollected;          // Собранные монеты
     public int totalScore;              // Общий счёт, рассчитанный по формуле
-    public int pointsPerCoin = 10;      // Очки за монету
+    public int pointsPerCoin = 20;      // Очки за монету
     public int pointsPerSecond = 1;     // Очки за оставшееся время (за каждую секунду)
 
     [Header("Таймеры")]
-    public float countdownTime;  // Обратный отсчёт уровня
+    public float countdownTime;
     public float startCountdownTime;
-    public float levelTime;             // Время прохождения уровня
+    public float levelTime;
     private bool levelActive = false;
+
 
     private void Awake()
     {
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject); // сохраняется между сценами
         }
-        else
-        {
-            Destroy(gameObject);
-        }
-    }
-
-    private void Start()
-    {
-        //ResetLevelStats();
     }
 
     private void Update()
@@ -56,9 +48,9 @@ public class ScoreManager : MonoBehaviour
         }
     }
 
-    // Вызывается при запуске уровня
     public void StartLevel()
     {
+        Debug.Log("StartLevel() ");
         ResetLevelStats();
         levelActive = true;
     }
@@ -90,14 +82,12 @@ public class ScoreManager : MonoBehaviour
         startCountdownTime = countdownTime;
     }
 
-    // Метод вызывается при сборе монетки
     public void AddCoin()
     {
         coinsCollected++;
         Debug.Log("Монета собрана! Всего: " + coinsCollected);
     }
 
-    // Вызывается при завершении уровня (например, при соприкосновении мяча с финишной плиткой)
     public void EndLevel(bool success)
     {
         levelActive = false;
@@ -121,6 +111,27 @@ public class ScoreManager : MonoBehaviour
         {
             Debug.Log("Время вышло. Уровень проигран.");
         }
+
+        if (endGameObject != null)
+        {
+            endGameObject.SetActive(true);
+            FinalOutcomeSelector selector = endGameObject.GetComponent<FinalOutcomeSelector>();
+
+            if (selector != null)
+            {
+                // isVictory = true если игрок победил, иначе false
+                selector.ActivateOutcome(success);
+            }
+            else
+            {
+                Debug.LogWarning("FinalOutcomeSelector не найден на ENDGameObject.");
+            }
+        }
+        else
+        {
+            Debug.LogWarning("ENDGameObject не найден в сцене.");
+        }
+
     }
 
     // Сохраняем статистику в PlayerPrefs для каждой сложности отдельно
@@ -150,14 +161,15 @@ public class ScoreManager : MonoBehaviour
                   $"BestScore = {PlayerPrefs.GetInt(bestScoreKey)}");
     }
 
-    // Методы для тестирования телепортации (будут вызываться из UI)
+    // Методы для тестирования телепортации (будут вызываться из тестового UI)
     public void TeleportBallToFinish(GameObject ball)
     {
         FinishTileController finishTile = FindObjectOfType<FinishTileController>();
         if (finishTile != null)
         {
-            finishTile.TriggerWin(); // Вызываем победу вручную
+            finishTile.TriggerWin();
             Debug.Log("Вызвано событие победы.");
+            EndLevel(true);
         }
         else
         {
@@ -172,7 +184,6 @@ public class ScoreManager : MonoBehaviour
         GameObject coin = GameObject.FindWithTag("Coin");
         if (coin != null && ball != null)
         {
-            // Вместо перемещения шара, просто "подбираем" монетку
             Debug.Log("Собираем монетку: " + coin.name);
             Instance.AddCoin();
 

@@ -6,4 +6,6 @@ public static class GameSettings
     public static int MazeRows = 5;
     public static int MazeColumns = 5;
     public static Difficulty selectedDifficulty = Difficulty.Easy;
+
+    //public static bool difficultyChosen = false;
 }

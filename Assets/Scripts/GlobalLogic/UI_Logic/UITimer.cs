@@ -2,8 +2,6 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-
-
 public class UITimer : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI timerText;
@@ -13,14 +11,13 @@ public class UITimer : MonoBehaviour
     [SerializeField] private Color warningColor = Color.yellow;
     [SerializeField] private Color dangerColor = Color.red;
 
-    private float maxTime; // ћаксимальное врем€ дл€ текущей сложности
+    private float maxTime;
     private float defaultFontSize;
 
     private void Start()
     {
         defaultFontSize = timerText.fontSize;
 
-        // ѕытаемс€ сразу получить значение из ScoreManager
         if (ScoreManager.Instance != null && ScoreManager.Instance.startCountdownTime > 0)
         {
             maxTime = ScoreManager.Instance.startCountdownTime;
@@ -35,7 +32,7 @@ public class UITimer : MonoBehaviour
 
     private void Update()
     {
-        // ≈сли maxTime еще не установлен, пробуем обновить его из ScoreManager
+        // ≈сли maxTime еще не установлен, обновл€ем его из ScoreManager
         if (maxTime <= 0 && ScoreManager.Instance != null && ScoreManager.Instance.startCountdownTime > 0)
         {
             maxTime = ScoreManager.Instance.startCountdownTime;
@@ -49,7 +46,7 @@ public class UITimer : MonoBehaviour
             timerText.text = Mathf.CeilToInt(time).ToString();
 
             // »спользуем maxTime дл€ расчета процентов оставшегос€ времени
-            float timePercentage = (maxTime > 0) ? (time / maxTime) : 1f; // если maxTime еще 0, считаем, что 100% времени
+            float timePercentage = (maxTime > 0) ? (time / maxTime) : 1f;
 
             if (timePercentage <= 0.2f)
             {
