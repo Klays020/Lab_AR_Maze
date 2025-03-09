@@ -150,10 +150,15 @@ public class ScoreManager : MonoBehaviour
         float bestTime = PlayerPrefs.GetFloat(bestTimeKey, float.MaxValue);
         int bestScore = PlayerPrefs.GetInt(bestScoreKey, 0);
 
-        if (time < bestTime)
-            PlayerPrefs.SetFloat(bestTimeKey, time);
         if (score > bestScore)
+        {
             PlayerPrefs.SetInt(bestScoreKey, score);
+            PlayerPrefs.SetFloat(bestTimeKey, time);
+        }
+        else if (score == bestScore && time < bestTime)
+        {
+            PlayerPrefs.SetFloat(bestTimeKey, time);
+        }
 
         PlayerPrefs.Save();
         Debug.Log($"Сохранены результаты для {diff}: LastTime = {PlayerPrefs.GetFloat(lastTimeKey)}, " +

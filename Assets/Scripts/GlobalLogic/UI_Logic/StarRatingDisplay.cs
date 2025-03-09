@@ -52,6 +52,7 @@ public class StarRatingDisplay : MonoBehaviour
     public void UpdateStarRatingFromPrefs(string difficulty)
     {
         string key = "BestScore_" + difficulty;
+
         if (PlayerPrefs.HasKey(key))
         {
             int score = PlayerPrefs.GetInt(key);
